@@ -1,0 +1,5 @@
+administrator,1000
+testuser,1001
+domain\user1,1002
+user2@EXAMPLE.COM,1003
+alabala,14496

@@ -327,3 +327,343 @@ This project is licensed under the MIT License LICENSE.
 
 
 **Disclaimer:** This tool is intended for legitimate security testing, educational purposes, and authorized penetration testing only. Users are responsible for ensuring they have proper authorization before testing any systems.
+
+## 📄 process_input.py - Batch Hash Generation Script
+
+The `process_input.py` script provides batch processing capabilities for generating NT hashes from user account and RID pairs stored in an input file. This script is designed for processing large numbers of accounts efficiently and generating standardized output in CSV format.
+
+### 🎯 Script Purpose
+
+The `process_input.py` script serves as a batch processor that:
+- Reads user account and RID pairs from an input text file
+- Generates NT hashes for each account using the `gen_all_hashes` function
+- Outputs results in standardized CSV format
+- Handles various account formats (username, domain\user, user@domain)
+- Provides robust error handling and validation
+
+### 🔧 Core Functionality
+
+- **Batch Processing**: Processes multiple accounts from a single input file
+- **NT Hash Generation**: Generates NT (NTLM) hashes for each account
+- **Multiple Account Formats**: Supports different account naming conventions:
+  - Simple username: `administrator`
+  - Domain\user format: `DOMAIN\administrator`
+  - User@domain format: `administrator@DOMAIN.COM`
+- **CSV Output**: Generates structured output in comma-separated values format
+- **Input Validation**: Skips invalid lines, empty lines, and malformed entries
+- **Error Handling**: Provides detailed error messages and continues processing
+
+### 📁 Input File Format Requirements
+
+The input file must be a plain text file with the following specifications:
+
+#### File Structure
+- **Format**: Comma-separated values (CSV)
+- **Encoding**: UTF-8
+- **Line Endings**: Cross-platform compatible (\n or \r\n)
+
+#### Row Format
+Each valid row must contain exactly two comma-separated fields:
+```
+useraccount,rid
+```
+
+#### Field Specifications
+
+| Field | Type | Required | Description | Example |
+|-------|------|----------|-------------|---------|
+| `useraccount` | String | Yes | User account name in various formats | `administrator`, `DOMAIN\user`, `user@DOMAIN.COM` |
+| `rid` | Integer | Yes | User Relative Identifier (RID) | `1000`, `1001`, `14496` |
+
+#### Input File Examples
+
+**Basic Example:**
+```txt
+# Sample input file for hash generation
+# Format: useraccount,rid
+# Lines starting with # are treated as comments and will be skipped
+# Empty lines will also be skipped
+
+administrator,1000
+testuser,1001
+domain\user1,1002
+user2@EXAMPLE.COM,1003
+anotheruser,1004
+```
+
+**Advanced Example:**
+```txt
+# Active Directory user accounts with RIDs
+# Domain accounts
+DOMAIN\administrator,512
+DOMAIN\krbtgt,502
+DOMAIN\guest,501
+DOMAIN\testuser,1001
+DOMAIN\serviceacct,1102
+
+# UPN format accounts
+admin@DOMAIN.COM,512
+service@DOMAIN.COM,1102
+user@DOMAIN.COM,1003
+
+# Simple username format (domain will be inferred or empty)
+backup,1103
+sqlservice,1104
+webapp,1105
+```
+
+#### Input Validation Rules
+
+1. **Empty Lines**: Automatically skipped
+2. **Comment Lines**: Lines starting with `#` are treated as comments and skipped
+3. **Field Count**: Lines with fewer than 2 fields are skipped with warning
+4. **RID Validation**: Non-integer RID values cause line to be skipped with warning
+5. **Account Format**: Any string format is accepted for useraccount field
+
+### 📤 Output File Specifications
+
+The output file is generated in CSV format with the following structure:
+
+#### Output Format
+```
+useraccount,nt_hash
+```
+
+#### Field Descriptions
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `useraccount` | String | Original user account name from input (unchanged) |
+| `nt_hash` | String | Generated NT hash in hexadecimal format |
+
+#### Output File Example
+
+```csv
+administrator,"8846f7eaee8fb117ad06bdd830b7586c"
+testuser,"25d55ad283aa400af464c76d713c07ad"
+domain\user1,"e99a18c428cb38d5f260853678922e03"
+user2@EXAMPLE.COM,"5d41402abc4b2a76b9719d911017c592"
+anotheruser,"acbd18db4cc2f85cedef654fccc4a4d8"
+```
+
+#### Output Characteristics
+
+- **Encoding**: UTF-8
+- **Format**: CSV (comma-separated values)
+- **Quoting**: User accounts containing special characters are automatically quoted
+- **Hash Format**: NT hashes are returned as 32-character hexadecimal strings
+- **Error Handling**: Failed generations return error messages instead of hashes
+
+### 💻 Command-Line Usage
+
+#### Basic Syntax
+```bash
+python3 process_input.py --password <password> [options]
+```
+
+#### Required Parameters
+
+| Parameter | Short | Required | Description | Example |
+|-----------|-------|----------|-------------|---------|
+| `--password` | | Yes | Password to generate hashes for | `P@ssw0rd123` |
+
+#### Optional Parameters
+
+| Parameter | Short | Default | Description | Example |
+|-----------|-------|---------|-------------|---------|
+| `--input` | | `input.txt` | Path to input file | `users.txt` |
+| `--output` | | `output.txt` | Path to output file | `hashes.csv` |
+
+#### Usage Examples
+
+**Basic Usage:**
+```bash
+python3 process_input.py --password "MySecretPassword123"
+```
+
+**Custom Input/Output Files:**
+```bash
+python3 process_input.py --password "P@ssw0rd!" --input accounts.txt --output results.csv
+```
+
+**Processing Large Files:**
+```bash
+python3 process_input.py --password "SecurePass123" --input large_userlist.txt --output nt_hashes.csv
+```
+
+**Command with Full Paths:**
+```bash
+python3 process_input.py --password "TempPass456" --input /path/to/users.txt --output /path/to/hashes.csv
+```
+
+#### Security Considerations
+
+- **Password Display**: The password is shown as asterisks in the output for security
+- **File Permissions**: Ensure input/output files have appropriate permissions
+- **Environment**: Run in secure environment when processing sensitive data
+
+### 🔧 Dependency Requirements
+
+The `process_input.py` script requires the same dependencies as the main `gen_all_hashes.py` script:
+
+#### Core Dependencies
+- **Python**: 3.6 or higher
+- **Impacket**: >= 0.9.22 (for cryptographic operations)
+
+#### Installation
+```bash
+# Install required dependencies
+pip install impacket>=0.9.22
+
+# Or install from requirements.txt
+pip install -r requirements.txt
+```
+
+#### Optional Dependencies
+- **pycryptodome**: >= 3.15.0 (enhanced crypto operations)
+
+### ⚠️ Error Handling Behavior
+
+The script implements comprehensive error handling with the following behaviors:
+
+#### Input File Errors
+- **File Not Found**: Script exits with error message
+- **Permission Issues**: Script exits with appropriate error
+- **Encoding Issues**: UTF-8 encoding enforced with fallback handling
+
+#### Processing Errors
+- **Invalid RID Values**: Line skipped with warning, processing continues
+- **Malformed Lines**: Lines with insufficient fields skipped with warning
+- **Hash Generation Failures**: Error message returned instead of hash
+- **Import Errors**: Script exits if `gen_all_hashes.py` cannot be imported
+
+#### Output Errors
+- **Write Permissions**: Script exits if output file cannot be written
+- **Disk Space**: Script exits if disk space is insufficient
+- **File Locks**: Script exits if output file is locked by another process
+
+#### Error Message Format
+```
+Warning: Line 5 does not have at least two fields, skipping: invalid_line
+Warning: Invalid RID on line 7: not_a_number, skipping: user,invalid_rid
+Error: Could not import gen_all_hashes function: [details]
+Error: Input file 'missing.txt' not found.
+```
+
+### 🔄 Step-by-Step Workflow
+
+#### Step 1: Prepare Input File
+1. Create a text file (e.g., `input.txt`)
+2. Add user account and RID pairs in CSV format
+3. Include comments starting with `#` for documentation
+4. Ensure proper UTF-8 encoding
+
+#### Step 2: Verify Dependencies
+1. Check Python version: `python3 --version`
+2. Verify impacket installation: `python3 -c "import impacket; print('Impacket OK')"`
+3. Install missing dependencies if needed
+
+#### Step 3: Execute Script
+1. Run the script with required password parameter
+2. Monitor progress output in console
+3. Review any warnings or errors
+
+#### Step 4: Review Output
+1. Check generated output file
+2. Verify hash format and completeness
+3. Address any processing errors if present
+
+#### Step 5: Process Results
+1. Use output file for further analysis
+2. Import into security tools or databases
+3. Archive results as needed
+
+### 📋 Complete Workflow Example
+
+#### 1. Create Input File (`users.txt`)
+```txt
+# Active Directory user accounts for hash generation
+DOMAIN\administrator,512
+DOMAIN\testuser,1001
+admin@DOMAIN.COM,512
+backup,1103
+sqlservice,1104
+```
+
+#### 2. Run Processing Script
+```bash
+python3 process_input.py --password "P@ssw0rd123!" --input users.txt --output nt_hashes.csv
+```
+
+#### 3. Script Execution Output
+```
+Processing input file: users.txt
+Output will be written to: nt_hashes.csv
+Using password: **********
+--------------------------------------------------
+Processing line 1: DOMAIN\administrator, 512
+Processing line 2: DOMAIN\testuser, 1001
+Processing line 3: admin@DOMAIN.COM, 512
+Processing line 4: backup, 1103
+Processing line 5: sqlservice, 1104
+Processing complete. Results written to nt_hashes.csv
+```
+
+#### 4. Generated Output File (`nt_hashes.csv`)
+```csv
+DOMAIN\administrator,"8846f7eaee8fb117ad06bdd830b7586c"
+DOMAIN\testuser,"25d55ad283aa400af464c76d713c07ad"
+admin@DOMAIN.COM,"8846f7eaee8fb117ad06bdd830b7586c"
+backup,"acbd18db4cc2f85cedef654fccc4a4d8"
+sqlservice,"e99a18c428cb38d5f260853678922e03"
+```
+
+### 🔍 Troubleshooting
+
+#### Common Issues and Solutions
+
+**Issue: "Impacket is required" Error**
+```bash
+# Solution: Install impacket
+pip install impacket
+```
+
+**Issue: "Could not import gen_all_hashes function"**
+- Ensure `gen_all_hashes.py` is in the same directory
+- Check file permissions
+- Verify Python path includes current directory
+
+**Issue: Permission Denied Errors**
+- Check file read/write permissions
+- Run with appropriate user privileges
+- Verify output directory exists
+
+**Issue: Invalid RID Values**
+- Ensure RID values are integers only
+- Check for extra spaces in input file
+- Validate CSV format
+
+**Issue: Empty Output File**
+- Verify input file has valid content
+- Check password parameter is correct
+- Review script execution for error messages
+
+### 🎯 Best Practices
+
+1. **Security**: Use strong passwords and secure file handling
+2. **Validation**: Always review input files before processing
+3. **Backup**: Keep copies of input files and results
+4. **Testing**: Test with small files before large batches
+5. **Monitoring**: Monitor script execution for performance issues
+6. **Documentation**: Document processing parameters and results
+
+### 📊 Performance Considerations
+
+- **Large Files**: Script processes files line by line for memory efficiency
+- **Concurrent Processing**: Each account processed sequentially for accuracy
+- **Output Generation**: Results written immediately to avoid memory buildup
+- **Error Recovery**: Individual line errors don't stop entire processing
+
+---
+
+**Disclaimer:** This batch processing tool is intended for legitimate security testing, educational purposes, and authorized penetration testing only. Users are responsible for ensuring they have proper authorization before testing any systems or processing any user accounts.
