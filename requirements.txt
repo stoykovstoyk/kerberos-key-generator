@@ -1,0 +1,25 @@
+# Kerberos Key Generator - Python Dependencies
+# 
+# This file lists all Python packages required for the Kerberos key generator.
+# Install with: pip install -r requirements.txt
+
+# Core dependency for Kerberos crypto operations
+impacket>=0.9.22
+
+# Cryptographic library (often required by impacket or for enhanced crypto operations)
+pycryptodome>=3.15.0
+
+# Optional: For enhanced argument parsing and CLI features (if needed in future)
+# click>=8.0.0
+
+# Optional: For colorized output (if you want to add colored output)
+# colorama>=0.4.4
+
+# Optional: For logging and debugging utilities
+# rich>=12.0.0
+
+# Development dependencies (optional, for testing and development)
+# pytest>=7.0.0
+# pytest-cov>=4.0.0
+# black>=22.0.0
+# flake8>=5.0.0
