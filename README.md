@@ -9,7 +9,10 @@ This tool addresses the need for generating Kerberos hashes for testing, securit
 ### 🔧 Core Features
 
 - Generate AES256-CTS-HMAC-SHA1-96 Kerberos hashes
-- Generate AES128-CTS-HMAC-SHA1-96 Kerberos hashes  
+- Generate AES128-CTS-HMAC-SHA1-96 Kerberos hashes
+- Generate LM and NT hashes (NTLM)
+- Generate optional DES-CBC-MD5 keys
+- Create NTDS-style hash lines for Active Directory
 - Uses standard Active Directory salt format
 - Command-line interface with intuitive parameters
 - Error handling and debugging information
@@ -74,6 +77,123 @@ python generate.py -u <username> -r <realm> -p <password>
 | `--username` | `-u` | Yes | Username for Kerberos key generation | `administrator` |
 | `--realm` | `-r` | Yes | Realm/domain name (uppercase recommended) | `DOMAIN.BG` |
 | `--password` | `-p` | Yes | Plaintext password | `P@ssw0rd123` |
+
+## 🚀 Advanced Usage - gen_all_hashes.py
+
+The `gen_all_hashes.py` script provides extended functionality for generating comprehensive hash sets including Kerberos, NTLM, and NTDS-style outputs.
+
+### Basic Command Syntax
+```bash
+python gen_all_hashes.py -u <username> -r <realm> -p <password>
+```
+
+### Advanced Command Syntax
+```bash
+python gen_all_hashes.py --account "domain.bg\\alabala" --realm DOMAIN.BG --password "YourPassword123!" --rid 14496 --include-des
+```
+
+```bash
+python gen_all_hashes.py --account "domain.bg\\alabala" --realm DOMAIN.BG --password "YourPassword123!" --rid 14496 --include-des --empty-lm
+
+```
+
+```bash
+python gen_all_hashes.py --username alabala --realm DOMAIN.BG --password "YourPassword123!"
+```
+
+
+### Parameter Explanations
+| Parameter | Short | Required | Description | Example |
+|-----------|-------|----------|-------------|---------|
+| `--account` | | No | Account in domain\\user or user@domain format | `DOMAIN.BG\\administrator` |
+| `--username` | `-u` | Yes | Username (used if --account not provided) | `administrator` |
+| `--realm` | `-r` | No | Realm/domain name (can be inferred from --account) | `DOMAIN.BG` |
+| `--password` | `-p` | Yes | Plaintext password | `P@ssw0rd123` |
+| `--rid` | | No | User RID for NTDS line (default: 14496) | `14496` |
+| `--include-des` | | No | Also generate DES-CBC-MD5 key | |
+
+### Usage Examples
+
+#### Example 1: Basic NTLM + Kerberos Generation
+```bash
+python gen_all_hashes.py -u administrator -r DOMAIN.BG -p "P@ssw0rd123"
+```
+
+**Expected Output:**
+```
+[*] Username (user only) : administrator
+[*] Realm                : DOMAIN.BG
+[*] Salt used for AES    : DOMAIN.BGadministrator
+[*] Password             : P@ssw0rd123
+
+aes256-cts-hmac-sha1-96   : 1a2b3c4d5e6f7890abcdef1234567890abcdef1234567890abcdef1234567890
+aes128-cts-hmac-sha1-96   : 1a2b3c4d5e6f7890abcdef1234567890abcdef1234
+
+[+] LM/NT hashes:
+lm (hex)     : aad3b435b51404eeaad3b435b51404ee
+nt (hex)     : 8846f7eaee8fb117ad06bdd830b7586c
+
+[+] NTDS-style hash line:
+administrator:14496:aad3b435b51404eeaad3b435b51404ee:8846f7eaee8fb117ad06bdd830b7586c:::
+```
+
+#### Example 2: Full Account Format with RID
+```bash
+python gen_all_hashes.py --account "DOMAIN.BG\\administrator" --password "P@ssw0rd123" --rid 1000
+```
+
+**Expected Output:**
+```
+[*] Username (user only) : administrator
+[*] Realm                : DOMAIN.BG
+[*] Salt used for AES    : DOMAIN.BGadministrator
+[*] Password             : P@ssw0rd123
+
+aes256-cts-hmac-sha1-96   : 1a2b3c4d5e6f7890abcdef1234567890abcdef1234567890abcdef1234567890
+aes128-cts-hmac-sha1-96   : 1a2b3c4d5e6f7890abcdef1234567890abcdef1234
+
+[+] LM/NT hashes:
+lm (hex)     : aad3b435b51404eeaad3b435b51404ee
+nt (hex)     : 8846f7eaee8fb117ad06bdd830b7586c
+
+[+] NTDS-style hash line:
+DOMAIN.BG\\administrator:1000:aad3b435b51404eeaad3b435b51404ee:8846f7eaee8fb117ad06bdd830b7586c:::
+```
+
+#### Example 3: Including DES Key
+```bash
+python gen_all_hashes.py -u testuser -r EXAMPLE.COM -p "MySecurePassword!" --include-des
+```
+
+**Expected Output:**
+```
+[*] Username (user only) : testuser
+[*] Realm                : EXAMPLE.COM
+[*] Salt used for AES    : EXAMPLE.COMtestuser
+[*] Password             : MySecurePassword!
+
+aes256-cts-hmac-sha1-96   : f1e2d3c4b5a6978901234567890abcdef1234567890abcdef1234567890abcdef
+aes128-cts-hmac-sha1-96   : f1e2d3c4b5a6978901234567890abcdef1234
+des-cbc-md5               : 1a2b3c4d5e6f7890abcdef1234567890abcdef12
+
+[+] LM/NT hashes:
+lm (hex)     : aad3b435b51404eeaad3b435b51404ee
+nt (hex)     : 25d55ad283aa400af464c76d713c07ad
+
+[+] NTDS-style hash line:
+testuser:14496:aad3b435b51404eeaad3b435b51404ee:25d55ad283aa400af464c76d713c07ad:::
+```
+
+### Key Differences Between Scripts
+
+| Feature | `generate.py` | `gen_all_hashes.py` |
+|---------|---------------|-------------------|
+| **Primary Purpose** | Kerberos key generation | Comprehensive hash generation |
+| **Hash Types** | AES256, AES128 Kerberos | AES256, AES128, DES (optional), LM, NT |
+| **Output Format** | Simple hash list | Detailed output + NTDS-style line |
+| **Account Input** | Username only | Domain\\user, user@domain, or username |
+| **RID Support** | No | Yes (customizable) |
+| **Use Case** | Basic Kerberos testing | Full hash extraction for AD environments |
 
 ### Usage Examples
 
@@ -154,7 +274,8 @@ If you encounter issues with enctypes, the script provides debug information abo
 
 ```
 kerberos-key-generator/
-├── generate.py              # Main script for Kerberos key generation
+├── generate.py              # Basic Kerberos key generation script
+├── gen_all_hashes.py        # Comprehensive hash generation script (Kerberos + NTLM + NTDS)
 ├── README.md               # Comprehensive documentation
 ├── requirements.txt        # Python dependencies (optional)
 └── LICENSE                 # License file (if applicable)
@@ -164,7 +285,8 @@ kerberos-key-generator/
 
 | File | Description |
 |------|-------------|
-| `generate.py` | Main script containing the Kerberos key generation logic and command-line interface |
+| `generate.py` | Basic script for generating Kerberos keys (AES256, AES128) with simple interface |
+| `gen_all_hashes.py` | Advanced script for generating comprehensive hash sets including Kerberos, NTLM, and NTDS-style outputs |
 | `README.md` | Comprehensive documentation with usage instructions and troubleshooting |
 | `requirements.txt` | Optional file listing Python dependencies (can be created with `pip freeze > requirements.txt`) |
 
